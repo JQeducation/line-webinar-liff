@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>講座報名確認</title>
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f0f4f8;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 16px;
+    }
+    .card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 40px 28px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+    }
+    .icon { font-size: 52px; margin-bottom: 20px; }
+    h2 { font-size: 20px; color: #1a1a2e; margin-bottom: 10px; }
+    p { font-size: 14px; color: #666; line-height: 1.7; margin-bottom: 28px; }
+    .btn {
+      display: inline-block;
+      padding: 15px 36px;
+      border-radius: 50px;
+      font-size: 16px;
+      font-weight: 700;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: opacity .15s;
+    }
+    .btn:active { opacity: .75; }
+    .btn-green { background: #06C755; color: #fff; }
+    .loading { color: #aaa; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="card" id="app">
+    <p class="loading">載入中...</p>
+  </div>
+
+  <script>
+    // ── 填入你的值 ──────────────────────────────────────────
+    const GAS_URL    = 'https://script.google.com/macros/s/AKfycbwMZH3el2N3MUdVn28XxEylYdS7LEcZc5R5H5gpdcCa5HyaiaDVkM18SKQ0FARvPVpAMQ/exec';
+    const LIFF_ID    = '2009771736-55vgM1qr';
+    const LINE_OA_ID = '@704rcmqj';
+    // ────────────────────────────────────────────────────────
+
+    const app = document.getElementById('app');
+
+    function render(icon, title, body, btnHtml = '') {
+      app.innerHTML = `
+        <div class="icon">${icon}</div>
+        <h2>${title}</h2>
+        <p>${body}</p>
+        ${btnHtml}
+      `;
+    }
+
+    async function main() {
+      try {
+        await liff.init({ liffId: LIFF_ID });
+
+        if (!liff.isLoggedIn()) {
+          liff.login({ redirectUri: window.location.href });
+          return;
+        }
+
+        const profile    = await liff.getProfile();
+        const lineUserId = profile.userId;
+
+        const params = new URLSearchParams(window.location.search);
+        const token  = params.get('token');
+
+        if (!token) {
+          render('⚠️', '連結有誤', '缺少報名識別碼，請重新從報名連結進入。');
+          return;
+        }
+
+        render('⏳', '處理中', '正在確認您的報名資料...');
+
+        // 用 GET redirect 代替 fetch，完全避免 CORS 問題
+        const dest = `${GAS_URL}?action=link&token=${encodeURIComponent(token)}&lineUserId=${encodeURIComponent(lineUserId)}`;
+        window.location.replace(dest);
+
+      } catch (err) {
+        render('⚠️', '發生錯誤', err.message || '請稍後再試。');
+      }
+    }
+
+    main();
+  </script>
+</body>
+</html>
